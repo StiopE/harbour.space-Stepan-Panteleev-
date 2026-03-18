@@ -9,6 +9,13 @@ Any 14 / 16 problems solved count as 100%
     method say_hi() which prints "Hello, I am {name}"
 """
 
+class User:
+    def __init__(self, name):
+        self.name = name
+      
+    def say_hi(self):
+        print(f"Hello, I am {self.name}")
+
 
 """
 2) BankAccount
@@ -21,6 +28,18 @@ Rules:
 - Non-positive `deposit`/`withdraw` amounts are ignored.
 - `withdraw` bigger than current balance is ignored.
 """
+class BankAccount:
+    def __init__(self, owner: str, balance: float = 0.0) -> None:
+        self.owner = owner
+        self.balance = balance if balance >= 0 else 0.0
+      
+    def deposit(self, amount: float) -> None:
+        if amount > 0:
+            self.balance += amount
+    
+    def withdraw(self, amount: float) -> None:
+        if amount > 0 and amount <= self.balance:
+            self.balance -= amount
 
 
 """
@@ -33,6 +52,14 @@ Rules:
 - Members are stored in insertion order.
 - Each instance has independent member storage.
 """
+
+class Team:
+    def __init__(self) -> None:
+        self.members: list[str] = []
+    def add(self, name: str) -> None:
+        self.memberes.append(name)
+    def __len__(self) -> int:
+        return len(self.members)
 
 """ (Advanced, optional)
 5) QueueState
@@ -74,7 +101,16 @@ Rules:
 - `price < 0` or `qty <= 0` items are ignored.
 - `repr` must include `ShoppingCart`.
 """
-
+class ShoppingCart:
+    def __init__(self) -> None:
+        pass
+    def add_item(self, name: str, price: float, qty: int=1) -> None:
+        pass
+    def total_items(self) -> int:
+        pass
+    def total_price(self) -> float:
+        pass
+    
 
 """
 8) Classroom (class attribute)
