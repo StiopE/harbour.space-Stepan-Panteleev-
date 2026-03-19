@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import Any
+import time
 
 
 class Countdown:
@@ -38,13 +39,17 @@ class Countdown:
     """
 
     def __init__(self, n: int) -> None:
-        raise NotImplementedError
+        self.n = n
 
     def __iter__(self) -> Iterator[int]:
-        raise NotImplementedError
+        return self
 
     def __next__(self) -> int:
-        raise NotImplementedError
+        if self.n < 0:
+            raise StopIteration
+        val = self.n
+        self.n -=1
+        return val
 
 
 class StepIterator:
@@ -62,13 +67,21 @@ class StepIterator:
     """
 
     def __init__(self, values: list[Any], step: int = 2) -> None:
-        raise NotImplementedError
+        if step <= 0:
+            raise ValueError("Must be positive integer")
+        self.values = values
+        self.step = step
+        self.index = 0
 
     def __iter__(self) -> Iterator[Any]:
-        raise NotImplementedError
+        return self
 
     def __next__(self) -> Any:
-        raise NotImplementedError
+        if self.index >= len(self.values):
+            raise StopIteration
+        result = self.values[self.index]
+        self.index += self.step
+        return result
 
 
 class UniqueConsecutiveIterator:
@@ -82,13 +95,19 @@ class UniqueConsecutiveIterator:
     """
 
     def __init__(self, values: list[Any]) -> None:
-        raise NotImplementedError
+        self._iter = iter(values)
+        self._sentinel = object()
+        self._last = self._sentinel
 
     def __iter__(self) -> Iterator[Any]:
-        raise NotImplementedError
+        return self
 
     def __next__(self) -> Any:
-        raise NotImplementedError
+        while True:
+            value = next(self._iter)
+            if value != self._last:
+                self._last = value
+                return value
 
 
 class CircularIterator:
@@ -103,13 +122,24 @@ class CircularIterator:
     """
 
     def __init__(self, sequence: Sequence[Any], k: int) -> None:
-        raise NotImplementedError
+        if len(sequence) == 0 or k < 0:
+            raise ValueError
+        self._sequence = sequence
+        self._k = k
+        self._count = 0
+        self._index = 0
 
     def __iter__(self) -> Iterator[Any]:
-        raise NotImplementedError
+        return self
 
     def __next__(self) -> Any:
-        raise NotImplementedError
+        if self._count == self._k:
+            raise StopIteration
+        value = self._sequence[self._index % len(self._sequence)]
+        self._index += 1
+        self._count += 1
+        return value
+
 
 
 class FlattenIterator:
@@ -124,13 +154,23 @@ class FlattenIterator:
     """
 
     def __init__(self, data: list[Any]) -> None:
-        raise NotImplementedError
+        self._stack: list[Iterator[Any]] = [iter(data)]
 
     def __iter__(self) -> Iterator[Any]:
-        raise NotImplementedError
+        return self
 
     def __next__(self) -> Any:
-        raise NotImplementedError
+        while self._stack:
+            try:
+                item = next(self._stack[-1])
+            except StopIteration:
+                self._stack.pop()
+                continue
+            if isinstance(item, list):
+                self._stack.append(iter(item))
+            else:
+                return item
+        raise StopIteration
 
 
 def read_words(filename: str) -> Iterator[str]:
@@ -143,7 +183,9 @@ def read_words(filename: str) -> Iterator[str]:
     >>> list(read_words("sample.txt"))
     ['one', 'two', 'three']
     """
-    raise NotImplementedError
+    with open(filename) as f:
+        for line in f:
+            yield from line.split()
 
 
 def batch(iterable: Iterable[Any], size: int) -> Iterator[list[Any]]:
@@ -156,7 +198,16 @@ def batch(iterable: Iterable[Any], size: int) -> Iterator[list[Any]]:
     >>> list(batch([1, 2, 3, 4, 5, 6, 7], 3))
     [[1, 2, 3], [4, 5, 6], [7]]
     """
-    raise NotImplementedError
+    if size <= 0:
+        raise ValueError
+    current = []
+    for item in iterable:
+        current.append(item)
+        if len(current) == size:
+            yield current
+            current = []
+    if current: 
+        yield current
 
 
 def flatten(data: list[Any]) -> Iterator[Any]:
@@ -168,7 +219,11 @@ def flatten(data: list[Any]) -> Iterator[Any]:
     >>> list(flatten([1, [2, 3], [4, [5, 6]], 7]))
     [1, 2, 3, 4, 5, 6, 7]
     """
-    raise NotImplementedError
+    for item in data:
+        if isinstance(item, list):
+            yield from flatten(item)
+        else:
+            yield item
 
 
 def log_calls(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -190,7 +245,12 @@ def log_calls(func: Callable[..., Any]) -> Callable[..., Any]:
     add(2, 3) -> 5
     5
     """
-    raise NotImplementedError
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        all_args = [repr(a) for a in args] + [f"{k}={repr(v)}" for k, v in kwargs.items()]
+        print(f"{func.__name__}({', '.join(all_args)}) -> {result!r}")
+        return result
+    return wrapper
 
 
 def measure_time(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -206,7 +266,13 @@ def measure_time(func: Callable[..., Any]) -> Callable[..., Any]:
     >>> work()
     done
     """
-    raise NotImplementedError
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        elapsed = (time.perf_counter() - start) * 1000
+        print(f"Executed in {elapsed:.2f} ms")
+        return result
+    return wrapper
 
 
 def count_calls(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -224,7 +290,11 @@ def count_calls(func: Callable[..., Any]) -> Callable[..., Any]:
     >>> ping.calls
     2
     """
-    raise NotImplementedError
+    def wrapper(*args, **kwargs):
+        wrapper.calls += 1
+        return func(*args, **kwargs)
+    wrapper.calls = 0
+    return wrapper
 
 
 def ensure_non_negative(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -239,7 +309,12 @@ def ensure_non_negative(func: Callable[..., Any]) -> Callable[..., Any]:
     >>> diff(5, 2)
     3
     """
-    raise NotImplementedError
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        if result < 0:
+            raise ValueError
+        return result
+    return wrapper
 
 
 def retry(times: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
