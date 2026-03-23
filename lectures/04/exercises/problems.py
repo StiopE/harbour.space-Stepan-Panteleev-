@@ -21,6 +21,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
+import time
+import functools
 
 
 def log_calls(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -42,7 +44,12 @@ def log_calls(func: Callable[..., Any]) -> Callable[..., Any]:
     add(2, 3) -> 5
     5
     """
-    raise NotImplementedError
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        parts = [repr(a) for a in args]
+        parts += [f"{k}={v!r}" for k, v in kwargs.items()]
+        print(f"{func.__name__}({', '.join(parts)}) -> {result!r}")
+        return result
 
 
 def measure_time(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -62,7 +69,14 @@ def measure_time(func: Callable[..., Any]) -> Callable[..., Any]:
     >>> work()
     done
     """
-    raise NotImplementedError
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        elapsed = (time.perf_counter() - start) * 1000
+        print(f"Executed in {elapsed} ms")
+        return result
+    return wrapper
+
 
 
 def count_calls(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -80,7 +94,12 @@ def count_calls(func: Callable[..., Any]) -> Callable[..., Any]:
     >>> ping.calls
     2
     """
-    raise NotImplementedError
+    def wrapper(*args, **kwargs):
+        wrapper.calls += 1
+        return func(*args, **kwargs)
+    wrapper.calls = 0
+    return wrapper
+
 
 
 def ensure_non_negative(func: Callable[..., Any]) -> Callable[..., Any]:

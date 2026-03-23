@@ -17,7 +17,21 @@ URL = "https://example.com"
 
 def main() -> None:
     # TODO: implement GET request and print HTML response
-    pass
+
+    response = requests.get(URL)
+    response.raise_for_status()
+    content_type = response.headers.get("Content-Type", "")
+
+    print("Status code: ", response.status_code)
+    print("Content-Type: ", content_type)
+    print("HTML body:\n", response.text)
+
+    if "text/html" in content_type:
+        print("Response is HTML")
+    else:
+        print(f"Unexpected Content-Type: {content_type}")
+        
+    
 
 
 if __name__ == "__main__":
