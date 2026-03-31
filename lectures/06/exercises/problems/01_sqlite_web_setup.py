@@ -24,8 +24,21 @@ Optional:
 
 
 def main() -> None:
-    # TODO: run the steps from the docstring in sqlite_web.
-    print("Complete setup steps from this file docstring.")
+    import sqlite3
+
+    conn = sqlite3.connect("school.db")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS students (
+            id    INTEGER PRIMARY KEY,
+            name  TEXT    NOT NULL,
+            age   INTEGER NOT NULL,
+            email TEXT    UNIQUE NOT NULL,
+            track TEXT    NOT NULL
+        );
+    """)
+    conn.commit()
+    conn.close()
+    print("Table 'students' created (or already exists) in school.db")
 
 
 if __name__ == "__main__":

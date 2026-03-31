@@ -18,11 +18,23 @@ def main() -> None:
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # TODO 1: age >= 22
+    cur.execute("SELECT * FROM students WHERE age >= ?", (22,))
+    print("Students with age >= 22:")
+    for row in cur.fetchall():
+        print(row)
 
-    # TODO 2 + 3: order by age desc, limit 3
+    cur.execute("SELECT * FROM students ORDER BY age DESC LIMIT ?", (3,))
+    print("\nTop 3 oldest students:")
+    for row in cur.fetchall():
+        print(row)
 
-    # TODO 4: track='backend' and age < 23
+    cur.execute(
+        "SELECT * FROM students WHERE track = ? AND age < ?",
+        ("backend", 23),
+    )
+    print("\nBackend students younger than 23:")
+    for row in cur.fetchall():
+        print(row)
 
     conn.close()
 

@@ -24,13 +24,34 @@ def main() -> None:
     engine = create_engine(DB_URL, echo=False)
 
     with Session(engine) as session:
-        # TODO 1: add an assignment for an existing student
+        first_student = session.scalars(select(Student)).first()
+        if first_student:
+            assignment = Assignment(
+                title="SQL Basics Homework",
+                score=95,
+                student_id=first_student.id,
+            )
+            session.add(assignment)
+            session.flush()
 
-        # TODO 2: read all students
+        all_students = session.scalars(select(Student)).all()
+        print("All students:")
+        for s in all_students:
+            print(f"  {s.id}: {s.name}, age={s.age}, track={s.track}")
 
-        # TODO 3: read filtered + sorted students
+        older_students = session.scalars(
+            select(Student).where(Student.age >= 22).order_by(Student.age.desc())
+        ).all()
+        print("\nStudents with age >= 22 (desc):")
+        for s in older_students:
+            print(f"  {s.name}, age={s.age}")
 
-        # TODO 4: read assignments with student data
+        assignments = session.scalars(
+            select(Assignment)
+        ).all()
+        print("\nAssignments:")
+        for a in assignments:
+            print(f"  {a.title} (score={a.score}) — student: {a.student.name}")
 
         session.commit()
 

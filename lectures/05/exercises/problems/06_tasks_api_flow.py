@@ -44,6 +44,13 @@ def create_task(payload: TaskIn) -> TaskOut:
 
 
 @app.get("/tasks", response_model=list[TaskOut])
-def get_tasks(task_id: int) -> list[TaskOut]:
-    # TODO: return all tasks
+def get_tasks() -> list[TaskOut]:
+    return list(db.values())
+
+
+@app.get("/tasks/{task_id}", response_model=TaskOut)
+def get_task(task_id: int) -> TaskOut:
+    if task_id not in db:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Task not found")
     return db[task_id]

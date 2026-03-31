@@ -18,13 +18,20 @@ def main() -> None:
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # TODO: SELECT COUNT(*) FROM students
+    cur.execute("SELECT COUNT(*) FROM students")
+    print("Total students:", cur.fetchone()[0])
 
-    # TODO: SELECT AVG(age) FROM students
+    cur.execute("SELECT AVG(age) FROM students")
+    print("Average age:", cur.fetchone()[0])
 
-    # TODO: SELECT MIN(age), MAX(age) FROM students
+    cur.execute("SELECT MIN(age), MAX(age) FROM students")
+    min_age, max_age = cur.fetchone()
+    print(f"Min age: {min_age}, Max age: {max_age}")
 
-    # TODO: SELECT track, COUNT(*) FROM students GROUP BY track
+    cur.execute("SELECT track, COUNT(*) FROM students GROUP BY track")
+    print("\nStudents per track:")
+    for track, count in cur.fetchall():
+        print(f"  {track}: {count}")
 
     conn.close()
 

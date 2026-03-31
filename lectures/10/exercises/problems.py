@@ -9,7 +9,9 @@ Rules:
 from __future__ import annotations
 
 import asyncio
+import threading
 import time
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 
 def simulated_long_fetch(value: object) -> object:
@@ -25,88 +27,74 @@ async def async_simulated_long_fetch(value: object) -> object:
 
 
 def locked_counter_total(num_threads: int, increments_per_thread: int) -> int:
-    """Mission 1: thread-safe counter increment with `threading.Lock`.
+    """Mission 1: thread-safe counter increment with `threading.Lock`."""
+    counter = 0
+    lock = threading.Lock()
 
-    Required functions/classes:
-        - `threading.Thread`
-        - `threading.Lock`
-        - `Thread.start()` and `Thread.join()`
+    def worker() -> None:
+        nonlocal counter
+        for _ in range(increments_per_thread):
+            with lock:
+                counter += 1
 
-    Expected result:
-        num_threads * increments_per_thread
-    """
-    raise NotImplementedError
+    threads = [threading.Thread(target=worker) for _ in range(num_threads)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    return counter
 
 
 def threaded_square_map(values: list[int]) -> list[int]:
-    """Mission 2: compute squares using one thread per element.
+    """Mission 2: compute squares using one thread per element."""
+    results = [0] * len(values)
 
-    Required functions/classes:
-        - `threading.Thread`
-        - `Thread.start()` and `Thread.join()`
+    def worker(idx: int, val: int) -> None:
+        results[idx] = val * val
 
-    Notes:
-        - Keep output index order the same as input order.
-
-    Example:
-        [2, -3, 4] -> [4, 9, 16]
-    """
-    raise NotImplementedError
+    threads = [threading.Thread(target=worker, args=(i, v)) for i, v in enumerate(values)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    return results
 
 
 def threadpool_sleep_map(delays: list[float], max_workers: int = 4) -> list[float]:
-    """Mission 3: simulate blocking I/O with `ThreadPoolExecutor`.
+    """Mission 3: simulate blocking I/O with `ThreadPoolExecutor`."""
+    if max_workers < 1:
+        raise ValueError("max_workers must be >= 1")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        return list(executor.map(simulated_long_fetch, delays))
 
-    Requirements:
-        - Use `ThreadPoolExecutor(max_workers=max_workers)`.
-        - In each task, call `simulated_long_fetch(delay)` and return its result.
-        - Preserve input order in returned list (for example via `executor.map`).
-        - Raise `ValueError` if `max_workers < 1`.
-    """
-    raise NotImplementedError
+
+def _square(x: int) -> int:
+    return x * x
 
 
 def processpool_square_map(values: list[int], max_workers: int = 2) -> list[int]:
-    """Mission 4: compute squares with `ProcessPoolExecutor`.
-
-    Requirements:
-        - Use a process pool (`ProcessPoolExecutor`).
-        - Use process-pool mapping (`executor.map` or equivalent).
-        - Return squared values in the same order as input.
-        - Raise `ValueError` if `max_workers < 1`.
-    """
-    raise NotImplementedError
+    """Mission 4: compute squares with `ProcessPoolExecutor`."""
+    if max_workers < 1:
+        raise ValueError("max_workers must be >= 1")
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        return list(executor.map(_square, values))
 
 
 async def async_tag_fetch(labels: list[str], delay: float = 0.01) -> list[str]:
-    """Mission 5: run async tasks concurrently with `asyncio.gather`.
+    """Mission 5: run async tasks concurrently with `asyncio.gather`."""
 
-    Required functions:
-        - `async_simulated_long_fetch`
-        - `asyncio.gather`
+    async def fetch_one(label: str) -> str:
+        await async_simulated_long_fetch(label)
+        return f"done:{label}"
 
-    Behavior:
-        - For each label, first fetch it with `async_simulated_long_fetch`.
-        - Then return `f"done:{label}"`.
-        - Preserve output order by label position.
-        - `delay` is kept for API compatibility; you do not need to use it.
-    """
-    raise NotImplementedError
+    return list(await asyncio.gather(*(fetch_one(l) for l in labels)))
 
 
 async def async_blocking_double(values: list[int]) -> list[int]:
-    """Mission 6: bridge blocking work into async flow.
+    """Mission 6: bridge blocking work into async flow."""
 
-    Required functions:
-        - `simulated_long_fetch`
-        - `asyncio.to_thread`
-        - `asyncio.gather`
+    async def fetch_and_double(val: int) -> int:
+        result = await asyncio.to_thread(simulated_long_fetch, val)
+        return result * 2
 
-    Return:
-        - For each input value, run `simulated_long_fetch` via `to_thread`.
-        - After fetch completes, double the value.
-        - Return doubled values in input order.
-
-        Example: [1, 2, 3] -> [2, 4, 6]
-    """
-    raise NotImplementedError
+    return list(await asyncio.gather(*(fetch_and_double(v) for v in values)))
